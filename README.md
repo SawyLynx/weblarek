@@ -98,3 +98,189 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+#### Данные
+В ходе анализа проекта было установлено: в приложении используются две сущности, которые описывают данные, — товар и покупатель. Их можно описать такими интерфейсами:
+Товар:
+```
+interface IProduct {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+} 
+```
+Покупатель:
+```
+interface IBuyer {
+    payment: TPayment;
+    email: string;
+    phone: string;
+    address: string;
+}
+```
+В ходе анализа проекта было установлено: в приложении используются три зоны ответственности —  хранение товаров, которые можно купить в приложении, хранение товаров, которые пользователь выбрал для покупки и данные покупателя, которые тот должен указать при оформлении заказа. Их можно описать такими классами:
+
+Каталог товаров хранит массив всех товаров; хранит товар, выбранный для подробного отображения. Содержит методы: сохранение массива товаров полученного в параметрах метода; получение массива товаров из модели; получение одного товара по его id; сохранение товара для подробного отображения; получение товара для подробного отображения:
+```
+class Products {
+  items: IProduct[] = [];
+  itemCard: IProduct | null = null;
+
+  setItems(items: IProduct[]): void {
+    this.items = items;
+  }
+
+  getItems(): IProduct[] {
+    return this.items;
+  }
+
+  getItemByID(id: string): IProduct | undefined {
+    return this.items.find(item => item.id === id);
+  }
+
+  setItemCard(item: IProduct): void {
+    this.itemCard = item;
+  }
+
+  getItemCard(): IProduct | null {
+    return this.itemCard;
+  }
+} 
+```
+Корзина хранит массив товаров, выбранных покупателем для покупки. Содержит методы: получение массива товаров, которые находятся в корзине; добавление товара, который был получен в параметре, в массив корзины;
+удаление товара, полученного в параметре из массива корзины; очистка корзины; получение стоимости всех товаров в корзине; получение количества товаров в корзине; проверка наличия товара в корзине по его id, полученного в параметр метода:
+```
+class Cart {
+  items: IProduct[] = [];
+
+  getItems(): IProduct[] {
+    return this.items;
+  }
+
+  addItem(item: IProduct): void {
+    this.items.push(item);
+  }
+
+  removeItem(id: string) {
+    this.items = this.items.filter(item => item.id !== id);
+  }
+
+  clearCart() {
+    this.items = [];
+  }
+
+  getPrice(): number {
+    return this.items.reduce((sum, item) => sum + (item.price || 0), 0);
+  }
+
+  getCount(): number {
+    return this.items.length;
+  }
+
+  isInTheCart(id: string): boolean {
+    return this.items.some(item => item.id === id)
+  }
+}
+```
+Покупатель хранит следующие данные о виде оплаты; адреcе; телефоне; email. Содержит методы: сохранение данных в модели; получение всех данных покупателя; очистка данных покупателя; валидация данных:
+```
+class Buyer {
+  payment: TPayment = '';
+  address: string = '';
+  phone: string = '';
+  email: string = '';
+
+  setData(field: keyof IBuyer, value: string): void {
+    if (field === 'payment') {
+      this.payment = value as TPayment;
+    } else if (field === 'address') {
+      this.address = value;
+    } else if (field === 'email') {
+      this.email = value;
+    } else if (field === 'phone') {
+      this.phone = value;
+    }
+  }
+
+  getAllData(): IBuyer {
+    return {
+      payment: this.payment,
+      address: this.address,
+      phone: this.phone,
+      email: this.email
+    };
+  }
+
+  clearData(): void {
+    this.payment = '';
+    this.address = '';
+    this.phone = '';
+    this.email = '';
+  }
+
+  validateData(): FormError {
+    const error: FormError = {};
+
+    if (!this.payment) {
+      error.payment = 'Не выбран вид оплаты';
+    }
+    if (!this.address.trim()) {
+      error.address = 'Укажите адрес';
+    }
+    if (!this.phone.trim()) {
+      error.phone = 'Укажите телефон';
+    }
+    if (!this.email.trim()) {
+      error.email = 'Укажите емэйл';
+    }
+
+    return error;
+  }
+}
+```
+
+#### Слой коммуникации
+В ходе анализа проекта было установлено: при взаимодействии с сервером приложение получает и отправляет три сущности. Они описывают следующие данные: список товаров, полученный с сервера, созданный заказ и подтвержденный заказ. Их можно описать такими интерфейсами:
+Список товаров:
+```
+export interface IProductList {
+    items: IProduct[];
+    total: number;
+}
+```
+Создание заказа:
+```
+export interface IOrder extends IBuyer {
+    items: string[];
+    total: number;
+}
+```
+Подтверждение заказа:
+```
+export interface IResult  {
+    id: string;
+    total: number;
+}
+```
+В ходе анализа проекта было установлено: приложение взаимодействует с другими приложениями и хранилищами. Эти функции можно описать классом, отвечающим за получение данных и отправку данных на сервер.
+
+Класс WebLarekApi хранит данные api. Содержит методы: получение списка товаров с сервера; отправка данных заказа на сервер: 
+```
+class WebLarekApi {
+  private api: IApi;
+
+  constructor(api: IApi) {
+      this.api = api
+  }
+
+  getProductList(): Promise<IProductList> {
+      return this.api.get<IProductList>('/product/');
+  }
+
+  postOrder(order: IOrder): Promise<IResult> {
+      return this.api.post<IResult>('/order/', order);
+  }  
+}
+```
