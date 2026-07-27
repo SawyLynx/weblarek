@@ -1,4 +1,4 @@
-import { IProduct } from '../../types/index';
+import { IProduct } from "../../types/index";
 
 export class Cart {
   private items: IProduct[] = [];
@@ -12,7 +12,7 @@ export class Cart {
   }
 
   removeItem(id: string): void {
-    this.items = this.items.filter(item => item.id !== id);
+    this.items = this.items.filter((item) => item.id !== id);
   }
 
   clearCart(): void {
@@ -28,6 +28,6 @@ export class Cart {
   }
 
   isInTheCart(id: string): boolean {
-    return this.items.some(item => item.id === id)
+    return this.items.some((item) => item.id === id);
   }
 }
