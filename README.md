@@ -114,10 +114,10 @@ interface IProduct {
 Покупатель:
 ```
 interface IBuyer {
-    payment: TPayment;
-    email: string;
-    phone: string;
-    address: string;
+  payment: TPayment | '';
+  email: string;
+  phone: string;
+  address: string;
 }
 ```
 В ходе анализа проекта было установлено: в приложении используются три зоны ответственности —  хранение товаров, которые можно купить в приложении, хранение товаров, которые пользователь выбрал для покупки и данные покупателя, которые тот должен указать при оформлении заказа. Их можно описать такими классами:
@@ -125,8 +125,8 @@ interface IBuyer {
 Каталог товаров хранит массив всех товаров; хранит товар, выбранный для подробного отображения. Содержит методы: сохранение массива товаров полученного в параметрах метода; получение массива товаров из модели; получение одного товара по его id; сохранение товара для подробного отображения; получение товара для подробного отображения:
 ```
 class Products {
-  items: IProduct[] = [];
-  itemCard: IProduct | null = null;
+  private items: IProduct[] = [];
+  private itemCard: IProduct | null = null;
 
   setItems(items: IProduct[]): void {
     this.items = items;
@@ -136,8 +136,8 @@ class Products {
     return this.items;
   }
 
-  getItemByID(id: string): IProduct | undefined {
-    return this.items.find(item => item.id === id);
+  getItemById(id: string): IProduct | undefined {
+    return this.items.find((item) => item.id === id);
   }
 
   setItemCard(item: IProduct): void {
@@ -153,7 +153,7 @@ class Products {
 удаление товара, полученного в параметре из массива корзины; очистка корзины; получение стоимости всех товаров в корзине; получение количества товаров в корзине; проверка наличия товара в корзине по его id, полученного в параметр метода:
 ```
 class Cart {
-  items: IProduct[] = [];
+  private items: IProduct[] = [];
 
   getItems(): IProduct[] {
     return this.items;
@@ -163,11 +163,11 @@ class Cart {
     this.items.push(item);
   }
 
-  removeItem(id: string) {
-    this.items = this.items.filter(item => item.id !== id);
+  removeItem(id: string): void {
+    this.items = this.items.filter((item) => item.id !== id);
   }
 
-  clearCart() {
+  clearCart(): void {
     this.items = [];
   }
 
@@ -180,27 +180,23 @@ class Cart {
   }
 
   isInTheCart(id: string): boolean {
-    return this.items.some(item => item.id === id)
+    return this.items.some((item) => item.id === id);
   }
 }
 ```
 Покупатель хранит следующие данные о виде оплаты; адреcе; телефоне; email. Содержит методы: сохранение данных в модели; получение всех данных покупателя; очистка данных покупателя; валидация данных:
 ```
 class Buyer {
-  payment: TPayment = '';
-  address: string = '';
-  phone: string = '';
-  email: string = '';
+  private payment: TPayment | '' = '';
+  private address: string = '';
+  private phone: string = '';
+  private email: string = '';
 
   setData(field: keyof IBuyer, value: string): void {
-    if (field === 'payment') {
-      this.payment = value as TPayment;
-    } else if (field === 'address') {
-      this.address = value;
-    } else if (field === 'email') {
-      this.email = value;
-    } else if (field === 'phone') {
-      this.phone = value;
+    if (field === "payment") {
+      this.payment = value as TPayment | '';
+    } else {
+      this[field] = value;
     }
   }
 
@@ -214,26 +210,26 @@ class Buyer {
   }
 
   clearData(): void {
-    this.payment = '';
-    this.address = '';
-    this.phone = '';
-    this.email = '';
+    this.payment = "";
+    this.address = "";
+    this.phone = "";
+    this.email = "";
   }
 
   validateData(): FormError {
     const error: FormError = {};
 
     if (!this.payment) {
-      error.payment = 'Не выбран вид оплаты';
+      error.payment = "Не выбран вид оплаты";
     }
     if (!this.address.trim()) {
-      error.address = 'Укажите адрес';
+      error.address = "Укажите адрес";
     }
     if (!this.phone.trim()) {
-      error.phone = 'Укажите телефон';
+      error.phone = "Укажите телефон";
     }
     if (!this.email.trim()) {
-      error.email = 'Укажите емэйл';
+      error.email = "Укажите email";
     }
 
     return error;
