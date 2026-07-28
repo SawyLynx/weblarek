@@ -81,5 +81,4 @@ webLarekApi.getProductList().then((data) => {
 })
 .catch((err) => {
   console.error("Ошибка при получении данных с сервера", err)
-})
-;
+});
