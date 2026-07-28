@@ -78,4 +78,8 @@ webLarekApi.getProductList().then((data) => {
   console.log("Получение данных с сервера", data);
   products.setItems(data.items);
   console.log("Сохранненые в массив данные с сервера", products.getItems());
-});
+})
+.catch((err) => {
+  console.error("Ошибка при получении данных с сервера", err)
+})
+;

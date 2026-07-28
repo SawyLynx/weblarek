@@ -9,7 +9,7 @@ export interface IApi {
   ): Promise<T>;
 }
 
-export type TPayment = "card" | "cash" | "";
+export type TPayment = "card" | "cash";
 export type FormError = Partial<Record<keyof IBuyer, string>>;
 
 export interface IProduct {
@@ -38,7 +38,7 @@ export interface IOrder extends IBuyer {
   total: number;
 }
 
-export interface IResult {
+export interface IOrderResult {
   id: string;
   total: number;
 }

@@ -1,14 +1,14 @@
 import { TPayment, IBuyer, FormError } from "../../types/index";
 
 export class Buyer {
-  private payment: TPayment = "";
-  private address: string = "";
-  private phone: string = "";
-  private email: string = "";
+  private payment: TPayment | '' = '';
+  private address: string = '';
+  private phone: string = '';
+  private email: string = '';
 
   setData(field: keyof IBuyer, value: string): void {
     if (field === "payment") {
-      this.payment = value as TPayment;
+      this.payment = value as TPayment | '';
     } else {
       this[field] = value;
     }
@@ -16,7 +16,7 @@ export class Buyer {
 
   getAllData(): IBuyer {
     return {
-      payment: this.payment,
+      payment: this.payment as TPayment,
       address: this.address,
       phone: this.phone,
       email: this.email,
