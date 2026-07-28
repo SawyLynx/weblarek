@@ -16,7 +16,7 @@ export class Buyer {
 
   getAllData(): IBuyer {
     return {
-      payment: this.payment as TPayment,
+      payment: this.payment,
       address: this.address,
       phone: this.phone,
       email: this.email,
