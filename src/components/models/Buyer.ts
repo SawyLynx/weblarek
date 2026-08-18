@@ -1,14 +1,17 @@
 import { TPayment, IBuyer, FormError } from "../../types/index";
+import { IEvents } from "../base/Events";
 
 export class Buyer {
-  private payment: TPayment | '' = '';
-  private address: string = '';
-  private phone: string = '';
-  private email: string = '';
+  private payment: TPayment | "" = "";
+  private address: string = "";
+  private phone: string = "";
+  private email: string = "";
+
+  constructor(protected events: IEvents) {}
 
   setData(field: keyof IBuyer, value: string): void {
     if (field === "payment") {
-      this.payment = value as TPayment | '';
+      this.payment = value as TPayment | "";
     } else {
       this[field] = value;
     }
@@ -28,6 +31,7 @@ export class Buyer {
     this.address = "";
     this.phone = "";
     this.email = "";
+    this.events.emit('data cleared', {});
   }
 
   validateData(): FormError {
