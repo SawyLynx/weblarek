@@ -98,7 +98,7 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
-#### Данные
+### Данные
 В ходе анализа проекта было установлено: в приложении используются две сущности, которые описывают данные, — товар и покупатель. Их можно описать такими интерфейсами:
 Товар:
 ```
@@ -122,132 +122,61 @@ interface IBuyer {
 ```
 В ходе анализа проекта было установлено: в приложении используются три зоны ответственности —  хранение товаров, которые можно купить в приложении, хранение товаров, которые пользователь выбрал для покупки и данные покупателя, которые тот должен указать при оформлении заказа. Их можно описать такими классами:
 
-Каталог товаров хранит массив всех товаров; хранит товар, выбранный для подробного отображения. Содержит методы: сохранение массива товаров полученного в параметрах метода; получение массива товаров из модели; получение одного товара по его id; сохранение товара для подробного отображения; получение товара для подробного отображения:
-```
-class Products {
-  private items: IProduct[] = [];
-  private itemCard: IProduct | null = null;
+#### Класс Products 
+Отвечает за все манипуляции с товарами на сайте.
 
-  constructor(protected events: IEvents) {}
+Поля класса: 
+`items` - массив товаров, 
+`itemCard` - карточка товара.
 
-  setItems(items: IProduct[]): void {
-    this.items = items;
-  }
+Конструктор: 
+`constructor(protected events: IEvents)` - принимает события.
 
-  getItems(): IProduct[] {
-    return this.items;
-  }
+Методы класса: 
+`setItems(items: IProduct[])` - сохраняет массив товаров полученного в параметрах метода, 
+`getItems()` - получает массив товаров из модели, 
+`getItemById(id: string)` - получает однин товар по его id, 
+`setItemCard(item: IProduct)` - сохраняет товар для подробного отображения, 
+`getItemCard()` - получает товар для подробного отображения.
 
-  getItemById(id: string): IProduct | undefined {
-    return this.items.find((item) => item.id === id);
-  }
+#### Класс Cart 
+Отвечает за все манипуляции с корзиной товаров.
 
-  setItemCard(item: IProduct): void {
-    this.itemCard = item;
-  }
+Поле класса: 
+`items` - массив товаров.
 
-  getItemCard(): IProduct | null {
-    return this.itemCard;
-  }
-} 
-```
-Корзина хранит массив товаров, выбранных покупателем для покупки. Содержит методы: получение массива товаров, которые находятся в корзине; добавление товара, который был получен в параметре, в массив корзины;
-удаление товара, полученного в параметре из массива корзины; очистка корзины; получение стоимости всех товаров в корзине; получение количества товаров в корзине; проверка наличия товара в корзине по его id, полученного в параметр метода:
-```
-class Cart {
-  private items: IProduct[] = [];
+Конструктор: 
+`constructor(protected events: IEvents)` - принимает события.
 
-  constructor(protected events: IEvents) {}
+Методы: 
+`getItems()` - получает массив товаров, которые находятся в корзине, 
+`addItem(item: IProduct)` - добавляет товар, в массив корзины, 
+`removeItem(id: string)` - удаляет товар из корзины по id, 
+`clearCart()` - очищает корзину, 
+`getPrice()` - получает стоимость всех товаров в корзине, 
+`getCount()` - получает  количество товаров в корзине, 
+`isInTheCart(id: string)` - проверяет наличие товара в корзине по его id, полученного в параметр метода.
 
-  getItems(): IProduct[] {
-    return this.items;
-  }
+#### Класс Buyer 
+Отвечает за все манипуляции с товарами на сайте.
 
-  addItem(item: IProduct): void {
-    this.items.push(item);
-    this.events.emit('item added');
-  }
+Поля класса: 
+`payment` - метод оплаты заказа, 
+`address` - адрес доставки, 
+`phone` - номер телефона, указанный пользователем, 
+`email` - электронная почта, указанная пользователем.
 
-  removeItem(id: string): void {
-    this.items = this.items.filter((item) => item.id !== id);
-    this.events.emit('item removed');
-  }
+Конструктор: 
+`constructor(protected events: IEvents)` - принимает события.
 
-  clearCart(): void {
-    this.items = [];
-    this.events.emit('cart cleared');
-  }
+Методы: 
+`setData(field: keyof IBuyer, value: string)` - сохраняет данные в моделе, 
+`getAllData()` - получает все данные пользователя, 
+`clearData()` - очищает данные пользователя, 
+`validateData()` - валидирует введенные данные.
 
-  getPrice(): number {
-    return this.items.reduce((sum, item) => sum + (item.price || 0), 0);
-  }
 
-  getCount(): number {
-    return this.items.length;
-  }
-
-  isInTheCart(id: string): boolean {
-    return this.items.some((item) => item.id === id);
-  }
-}
-```
-Покупатель хранит следующие данные о виде оплаты; адреcе; телефоне; email. Содержит методы: сохранение данных в модели; получение всех данных покупателя; очистка данных покупателя; валидация данных:
-```
-class Buyer {
-  private payment: TPayment | '' = '';
-  private address: string = '';
-  private phone: string = '';
-  private email: string = '';
-
-  constructor(protected events: IEvents) {}
-
-  setData(field: keyof IBuyer, value: string): void {
-    if (field === "payment") {
-      this.payment = value as TPayment | '';
-    } else {
-      this[field] = value;
-    }
-  }
-
-  getAllData(): IBuyer {
-    return {
-      payment: this.payment,
-      address: this.address,
-      phone: this.phone,
-      email: this.email
-    };
-  }
-
-  clearData(): void {
-    this.payment = "";
-    this.address = "";
-    this.phone = "";
-    this.email = "";
-    this.events.emit('data cleared', {});
-  }
-
-  validateData(): FormError {
-    const error: FormError = {};
-
-    if (!this.payment) {
-      error.payment = "Не выбран вид оплаты";
-    }
-    if (!this.address.trim()) {
-      error.address = "Укажите адрес";
-    }
-    if (!this.phone.trim()) {
-      error.phone = "Укажите телефон";
-    }
-    if (!this.email.trim()) {
-      error.email = "Укажите email";
-    }
-
-    return error;
-  }
-}
-```
-
-#### Слой коммуникации
+### Слой коммуникации
 В ходе анализа проекта было установлено: при взаимодействии с сервером приложение получает и отправляет три сущности. Они описывают следующие данные: список товаров, полученный с сервера, созданный заказ и подтвержденный заказ. Их можно описать такими интерфейсами:
 Список товаров:
 ```
@@ -272,26 +201,21 @@ export interface IResult  {
 ```
 В ходе анализа проекта было установлено: приложение взаимодействует с другими приложениями и хранилищами. Эти функции можно описать классом, отвечающим за получение данных и отправку данных на сервер.
 
-Класс WebLarekApi хранит данные api. Содержит методы: получение списка товаров с сервера; отправка данных заказа на сервер: 
-```
-class WebLarekApi {
-  private api: IApi;
+#### Класс WebLarekApi 
+отвечает за все манипуляции с товарами на сайте.
 
-  constructor(api: IApi) {
-      this.api = api
-  }
+Поле класса: 
+`api` - данные api.
 
-  getProductList(): Promise<IProductList> {
-      return this.api.get<IProductList>('/product/');
-  }
+Конструктор: 
+`constructor(api: IApi)` - принимает данные api.
 
-  postOrder(order: IOrder): Promise<IResult> {
-      return this.api.post<IResult>('/order/', order);
-  }  
-}
-```
+Методы: 
+`getProductList()` - получает список товаров с сервера, 
+`postOrder(order: IOrder)` - отправляет данные заказа на сервер.
 
-#### Слой представления
+
+### Слой представления
 В ходе анализа проекта было установлено: в приложении используются сущности, которые описывают блоки сайта, — шапку, галерею, корзину, карточки товаров, модальные окна, формы оформления и окно успешного оформления заказа. Их можно описать следующими интерфейсами:
 Шапка:
 ```
@@ -345,344 +269,202 @@ export interface ISuccessData {
 ```
 В ходе анализа проекта было установлено: в приложении используются блоки шапки, галереи, корзины, карточек товаров, модальных окон, формы оформления и окно успешного оформления заказа. Их можно описать следующими классами:
 
-Шапка хранит счетчик количества товаров в корзине и кнопку открытия корзины. Наследует интерфейс IHeader. Содержит метод изменения счетчика товаров:
-```
-class Header extends Component<IHeader> {
-  protected counterElement: HTMLElement;
-  protected basketButton: HTMLButtonElement;
+#### Класс Header 
+Отвечает за отрисовку шапки сайта, наследует интерфейс IHeader.
 
-  constructor(protected events: IEvents, container: HTMLElement) {
-    super(container);
+Поля класса: 
+`counterElement` - HTML элемент, счетчик колличества товаров в корзине, 
+`basketButton` - HTML кнопка открытия модального окна корзины.
 
-    this.counterElement = ensureElement<HTMLElement>('.header__basket-counter', this.container);
-    this.basketButton = ensureElement<HTMLButtonElement>('.header__basket', this.container);
+Конструктор: 
+`constructor(protected events: IEvents, container: HTMLElement)` - принимает события и HTML элемент контейнера. Устанавливает для кнопки корзины слушатель, который создает событие открытия корзины 'basket:open'.
 
-    this.basketButton.addEventListener('click', () => {
-      this.events.emit('basket:open')
-    })
-  }
+Метод: 
+`set counter(value: number)` - измененяет счетчик товаров в корзине.
 
-  set counter(value: number) {
-    this.counterElement.textContent = String(value);
-  }
-}
-```
-Галерея хранит каталог товаров. Наследует интерфейс IGallery. Содержит метод, заменяющий содержимое галлереи новыми элементами:
-```
-class Gallery extends Component<IGallery> {
-  protected catalogElement: HTMLElement;
 
-  constructor(container: HTMLElement) {
-    super(container);
-    
-    this.catalogElement = this.container;
-  }
+#### Класс Gallery 
+Отвечает за отрисовку галереи сайта, наследует интерфейс IGallery.
 
-  set catalog(items: HTMLElement[]) {
-    this.catalogElement.replaceChildren(...items)
-  }
-}
-```
-Корзина хранит список товаров в корзине, общую сумму товаров в корзине и кнопку закрытия окна корзины. Наследует интерфейс ICartContent. Содержит методы отображения и подсчета количества товаров в корзине, а также подсчета и вывода общей суммы товаров в корзине:
-```
-class CartContent extends Component<ICartContent> {
-  protected list: HTMLElement;
-  protected totalPrice: HTMLElement;
-  protected button: HTMLButtonElement;
+Поле класса: 
+`catalogElement` - HTML элемент, каталог товаров.
 
-  constructor(protected events: IEvents, container: HTMLElement) {
-    super(container);
-    
-    this.list = ensureElement<HTMLElement>('.basket__list', this.container);
-    this.totalPrice = ensureElement<HTMLElement>('.basket__price', this.container);
-    this.button = ensureElement<HTMLButtonElement>('.basket__button', this.container);
+Конструктор: 
+`constructor(container: HTMLElement)` - принимает HTML элемент контейнера.
 
-    this.button.addEventListener('click', () => {
-      this.events.emit('order:open');
-    });
-  }
+Метод: 
+`set catalog(items: HTMLElement[])` - заменяет содержимое галлереи новыми элементами карточек товаров.
 
-  set items(items: HTMLElement[]) {
-    if (items.length > 0) {
-      this.list.replaceChildren(...items);
-      this.button.disabled = false;
-    } else {
-      const emptyText = document.createElement('p');
-      emptyText.textContent = 'Корзина пуста';
-      this.list.replaceChildren(emptyText);
-      this.button.disabled = true;
-    }
-  }
 
-  set total(value: number) {
-    this.totalPrice.textContent = `${value} синапсов`;
-  }
-}
-```
-Карточка товара состоит из родительского класса и трех дочерних. Родительский класс ProductCard хранит название товара и его цену. Наследует интерфейс IProduct. Содержит методы загрузки названия и установки цены товара, а также бокировки кнопки покупки, если цена товара не установленна. 
-Класс ProductCard наследуют три класса: CatalogCard, CardPreview и CartCard, которые отвечают за разные варианты отображения карточки. 
-Класс CatalogCard отвечает за карточку товара в каталоге-галерее. Класс хранит изображение товара и его категорию. Содержит методы загрузки категории и изображения. 
-Класс CardPreview отвечает за карточку товара в открытую в самостоятельном модальном окне. Класс хранит картинку, категорию, описание товара и кнопку его покупки. Содержит методы загрузки изображения, описания, категории, цены товара, а также отображение кнопки покупки товара. 
-Класс CartCard отвечает за оотбражение карточки в корзине. Класс хранит индекс товара и кнопку его удаления из корзины. Содержит метод загрузки индекса.
-```
-class ProductCard extends Component<IProduct> {
-  protected titleElement: HTMLElement;
-  protected priceElement: HTMLElement;
+#### Класс CartContent 
+Отвечает за , наследует интерфейс ICartContent.
 
-  constructor(container: HTMLElement) {
-    super(container);
+Поля класса: 
+`list` - HTML элемент, список товаров в корзине,
+`totalPrice` - HTML элемент, общая сумма товаров в корзине,
+`button` - HTML кнопка, закрывающая окно корзины.
 
-    this.titleElement = ensureElement<HTMLElement>('.card__title', this.container);
-    this.priceElement = ensureElement<HTMLElement>('.card__price', this.container);
-  }
+Конструктор: 
+`constructor(protected events: IEvents, container: HTMLElement)` - события и принимает HTML элемент контейнера. Устанавливает для кнопки слушатель, который создает событие открытия корзины 'order:open'
 
-  set title(value: string) {
-    this.titleElement.textContent = value;
-  }
+Методы: 
+`set items(items: HTMLElement[])` - отображения и подсчета количества товаров в корзине,
+`set total(value: number)` - подсчета и вывода общей суммы товаров в корзине.
 
-  set price(value: number | null) {
-    if (value == null) {
-      this.priceElement.textContent = 'Бесценно';
-    } else {
-      this.priceElement.textContent = `${value} синапсов`;
-    }
-  }
-}
+Карточка товара состоит из родительского класса и трех дочерних:
 
-class CatalogCard extends ProductCard {
-  protected imageElement: HTMLImageElement;
-  protected categoryElement: HTMLElement;
+#### Класс ProductCard 
+Отвечает за отрисовку для общих всех типов карточек товаров параметров, наследует интерфейс ICartContent.
 
-  constructor(container: HTMLElement, actions?: IProductCard) {
-    super(container);
+Поля класса: 
+`titleElement` - HTML элемент, название товара,
+`priceElement` - HTML элемент, цена товара,
 
-    this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
-    this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
+Конструктор: 
+`constructor(container: HTMLElement)` - принимает HTML элемент контейнера. Устанавливает элементы названия и цены товара
 
-    const targetElement = (this.container.firstElementChild || this.container) as HTMLElement;
-    if (actions?.onClick) {
-      targetElement.addEventListener('click', actions.onClick);
-    }
-  }
+Методы: 
+`set title(value: string)` - загружает название и установки цены товара,
+`set price(value: number | null)` - блокирует кнопки покупки, если цена товара не установленна.
 
-  set category(value: string) {
-    this.categoryElement.textContent = value;
-    this.categoryElement.className = 'card__category';
-    const modClass = categoryMap[value as keyof typeof categoryMap] || 'card__category_other';
-    this.categoryElement.classList.add(modClass);
-  }
+#### Класс CatalogCard
+Отвечает за отрисовку карточки в каталоге товаров, наследует класс ProductCard.
 
-  set image(value: string) {
-    this.setImage(this.imageElement, value, this.titleElement.textContent || '');
-  }
-}
+Поля класса: 
+`imageElement` - HTML элемент, изображение товара,
+`categoryElement` - HTML элемент, категория товара.
 
-class CardPreview extends ProductCard {
-  protected imageElement: HTMLImageElement;
-  protected categoryElement: HTMLElement;
-  protected descriptionElement: HTMLElement;
-  protected buttonElement: HTMLButtonElement;
+Конструктор: 
+`constructor(container: HTMLElement, actions?: IProductCard)` - принимает HTML элемент контейнера и обработчик событий. Устанавливает для карточки товара слушатель, для открытия окна карточки товаров.
 
-  constructor(container: HTMLElement, actions?: IProductCard) {
-    super(container);
+Методы: 
+`set category(value: string)` - загружает категорию товара,
+`set image(value: string)` - загружает изображение товара.
 
-    this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
-    this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
-    this.descriptionElement = ensureElement<HTMLElement>('.card__text', this.container);
-    this.buttonElement = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-    if (actions?.onClick) {
-      this.buttonElement.addEventListener('click', actions.onClick);
-    }
-  }
+#### Класс CardPreview 
+Отвечает за отрисовку карточки в самостоятельном модальном окне, наследует класс ProductCard.
 
-  set category(value: string) {
-    this.categoryElement.textContent = value;
-    this.categoryElement.className = 'card__category';
-    const modClass = categoryMap[value as keyof typeof categoryMap] || 'card__category_other';
-    this.categoryElement.classList.add(modClass);
-  }
-  
-  set image(value: string) {
-    this.setImage(this.imageElement, value, this.titleElement.textContent || '');
-  }
+Поля класса: 
+`imageElement` - HTML элемент, изображение товара,
+`categoryElement` - HTML элемент, категория товара,
+`descriptionElement` - HTML элемент, описание товара,
+`buttonElement` - HTML кнопка, закрывающая окно карточки.
 
-  set description(value: string) {
-    this.descriptionElement.textContent = value;
-  }
+Конструктор: 
+`constructor(container: HTMLElement, actions?: IProductCard)` - принимает HTML элемент контейнера и обработчик событий. Устанавливает для кнопки покупки слушатель.
 
-  set buttonText(value: string) {
-    if (this.buttonElement) {
-      this.buttonElement.textContent = value;
-    }
-  }
+Методы: 
+`set category(value: string)` - загружает категорию товара,
+`set image(value: string)` - загружает изображение товара,
+`set description(value: string)` - загружает описание товара,
+`set buttonText(value: string)` - меняет текст кнопки покупки,
+`set buttonDisabled(value: boolean)` - управляет блокировкой кнопки покупки.
 
-  override set price(value: number | null) {
-    super.price = value;
-    if (value == null && this.buttonElement) {
-      this.buttonElement.disabled = true;
-      this.buttonElement.textContent = 'Недоступно';
-    }
-  }
-}
+#### Класс CartCard
+Отвечает за отрисовку карточки в окне корзины, наследует класс ProductCard.
 
-class CartCard extends ProductCard {
-  protected cardIndex: HTMLElement;
-  protected deleteButton: HTMLButtonElement;
+Поля класса: 
+`cardIndex` - HTML элемент, индекс товара,
+`deleteButton` - HTML кнопка, удаления товара из корзины.
 
-  constructor(container: HTMLElement, actions?: IProductCard) {
-    super(container);
+Конструктор: 
+`constructor(container: HTMLElement, actions?: IProductCard)` - принимает HTML элемент контейнера и обработчик событий. Устанавливает для кнопки удаления товара слушатель.
 
-    this.cardIndex = ensureElement<HTMLElement>('.basket__item-index', this.container);
-    this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
+Метод: 
+`set index(value: number)` - устанавливает индекс товара.
 
-    if (actions?.onClick) {
-      this.deleteButton.addEventListener('click', actions.onClick);
-    }
-  }
+#### Класс Modal
+Отвечает за отрисовку модального окна, наследует интерфейс IModal.
 
-  set index(value: number) {
-    this.cardIndex.textContent = String(value);
-  }
-}
-```
-Модальное окно хранит кнопку закрытия и контент модального окна. Наследует интерфейс IModal. Содержит методы загрузки контента, открытия и закрытия модального окна:
-```
-class Modal extends Component<IModal> {
-  protected button: HTMLButtonElement;
-  protected contentElement: HTMLElement;
+Поля класса: 
+`button` - HTML кнопка закрытия модального окна, 
+`contentElement` - HTML элемент, контент модального окна.
 
-  constructor(protected events: IEvents, container: HTMLElement) {
-    super(container);
+Конструктор: 
+`constructor(events: IEvents, container: HTMLElement)` - принимает события и HTML элемент контейнера. Устанавливает слушатели для закрытия окна при клике на кнопку закрытия и вне модальнго окна, а также блокирует закрытие при клике по контенту.
 
-    this.button = ensureElement<HTMLButtonElement>('.modal__close', this.container);
-    this.contentElement = ensureElement<HTMLElement>('.modal__content', this.container);
+Методы: 
+`set content(value: HTMLElement)` - устанавливает индекс товара,
+`open()` - отвечает за открытие модального окна,
+`close()` - отвечает за закрытие модальнго окна.
 
-    this.button.addEventListener('click', () => this.close());
-    this.container.addEventListener('click', () => this.close());
-    this.contentElement.addEventListener('click', (e) => e.stopPropagation());
-  }
+Форма оформления заказа состоит из родительского класса и двух дочерних. 
 
-  set content(value: HTMLElement) {
-    const targetElement = this.contentElement || ensureElement<HTMLElement>('.modal__content', this.container);
-    if (targetElement) {
-      targetElement.replaceChildren(value);
-    }
-  }
+#### Класс Form
+Отвечает за отрисовку окон оформления заказа, наследует интерфейс IForm.
 
-  open() {
-    this.container.classList.add('modal_active');
-    this.events.emit('modal:open');
-  }
+Поля класса: 
+`submit` - HTML кнопка подтверждения, 
+`error` - HTML элемент, вывод ошибки заполнения формы.
 
-  close() {
-    this.container.classList.remove('modal_active');
-    this.events.emit('modal:close');
-  }
-}
-```
-Форма оформления заказа состоит из родительского класса и двух дочерних. Родительский класс Form хранит кнопку подтверждения, формат ошибки и форму. Наследует интерфейс IForm. Содержит методы проверяющий правильность заполнения формы согласно валидации и отображающий ошибки. 
-Класс Form наследуют два класса: OrderData и OrderContacts, которые отвечают за разные стадии заполнения формы. Класс OrderData хранит две кнопки, отвечающие за разные виды оплаты заказа. Содержит методы выбора типа оплаты и удаления выбранного товара. Класс OrderContacts отвечает за форму ввода телефона и электронной почты.
-```
-class Form extends Component<IForm> {
-  protected submit: HTMLButtonElement;
-  protected error: HTMLElement;
-  protected override readonly container: HTMLFormElement;
+Конструктор: 
+`constructor(protected events: IEvents, container: HTMLFormElement)` - принимает события и HTML элемент контейнера. Устанавливает слушатели для инпут элемонтов и события подтверждения, для отмены стандартного поведения браузера.
 
-  constructor(protected events: IEvents, container: HTMLFormElement) {
-    super(container);
+Методы: 
+`set valid(value: boolean)` - отвечает за открытие модального окна,
+`set errors(value: string[])` - отвечает за закрытие модальнго окна.
 
-    this.container = container;
-    this.submit = ensureElement<HTMLButtonElement>('button[type=submit]', this.container);
-    this.error = ensureElement<HTMLElement>('.form__errors', this.container);
+#### OrderData
+Отвечает за отрисовку первого окна оформления заказа, наследует класс Form.
 
-    this.container.addEventListener('input', (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const formName = this.container.name || this.container.getAttribute('id') || 'form';
-      this.events.emit(`${formName}.${target.name}:change`, {
-        field: target.name,
-        value: target.value
-      });
-    });
-  }
+Поля класса: 
+`cardButton` - HTML кнопка выбора онлайн типа оплаты,
+`cashButton` - HTML кнопка выбора наличного типа оплаты,
+`addressInput` - HTML интпут, поле ввода адреса.
 
-  set valid(value: boolean) {
-    this.submit.disabled = !value;
-  }
+Конструктор: 
+`constructor(events: IEvents, container: HTMLFormElement)` - принимает события и HTML элемент контейнера. Устанавливает слушатели для кнопок оплаты, которые создают событие 'order.payment:change'.
 
-  set errors(value: string[]) {
-    this.error.textContent = value.join(', ');
-  }
-}
+Методы: 
+`set payment(value: TPayment | "" | undefined)` - отвечает за выбор типа оплаты,
+`set address(value: string)` - отвечает за установку значения адреса.
 
-class OrderData extends Form {
-  protected cardButton: HTMLButtonElement;
-  protected cashButton: HTMLButtonElement;
+хранит две кнопки, отвечающие за разные виды оплаты заказа, а также поле ввода адреса доставки. Содержит методы выбора типа оплаты и установления значения адреса доставки.
 
-  constructor(events: IEvents, container: HTMLFormElement) {
-    super(events, container);
+#### OrderContacts
+Отвечает за отрисовку второго окна оформления заказа, наследует класс Form.
 
-    this.cardButton = ensureElement<HTMLButtonElement>('button[name=card]', this.container);
-    this.cashButton = ensureElement<HTMLButtonElement>('button[name=cash]', this.container);
+Поля класса: 
+`emailInput` - HTML интпут, поле ввода электронной почты, 
+`phoneInput` - HTML интпут, поле ввода номера телефона.
 
-    this.cardButton.addEventListener('click', (e) => { 
-      e.preventDefault(); 
-      this.events.emit('order.payment:change', { field: 'payment', value: 'card' });
-    });
+Конструктор: 
+`constructor(events: IEvents, container: HTMLFormElement)` - принимает события и HTML элемент контейнера.
 
-    this.cashButton.addEventListener('click', (e) => { 
-      e.preventDefault(); 
-      this.events.emit('order.payment:change', { field: 'payment', value: 'cash' });
-    });
-  }
+Методы: 
+`set email(value: string)` - отвечает за установку значения электронной почты,
+`set phone(value: string)` - отвечает за установку значения номера телефона.
 
-  set payment(value: TPayment | undefined) {
-    this.cardButton.classList.toggle('button_alt-active', value === 'card');
-    this.cashButton.classList.toggle('button_alt-active', value === 'cash');
-  }
+отвечает за форму ввода телефона и электронной почты. Хранит поля для ввода данных электронной почты и телефонного номера. Содержит методы установления значения электронной почты и номера телефона.
 
-  clearButtons() {
-    this.cardButton.classList.remove('button_alt-active');
-    this.cashButton.classList.remove('button_alt-active');
-  }
-}
+#### Класс Success
+Отвечает за отрисовку окна успешного оформления заказа, наследует интерфейс ISuccessData.
 
-class OrderContacts extends Form {}
-```
-Окно успешного оформления заказа заказа хранит кнопку закрытия и описание окна успешного оформления заказа. Наследует интерфейс ISuccessData. Содержит метод подсчета и вывода на экран общей списанной суммы:
-```
-class Success extends Component<ISuccessData> {
-  protected button: HTMLButtonElement;
-  protected description: HTMLElement;
+Поля класса: 
+`button` - HTML кнопка закрытия окна, 
+`description` - HTML элемент, описание окна.
 
-  constructor(container: HTMLElement, actions: ISuccessActions) {
-    super(container);
+Конструктор: 
+`constructor(container: HTMLElement, actions: ISuccessActions)` - HTML элемент контейнера и действия, наследующие интерфейс ISuccessActions. Устанавливает слушатели для закрытия окна при клике на кнопку закрытия.
 
-    this.button = ensureElement<HTMLButtonElement>('.order-success__close', this.container);
-    this.description = ensureElement<HTMLElement>('.order-success__description', this.container);
-
-    this.button.addEventListener('click', () => {
-      actions.onClose();
-    });
-  }
-
-  set total(value: number) {
-    this.description.textContent = `Списано ${value} синапсов`;
-  }
-}
-```
+Метод: 
+`set total(value: number)` - отвечает за подсчет общей суммы купленных товаров.
 
 #### Презентер
 Презентер приложения отвечает за логику работы главной страницы. Код Презентера описан в виде обработчиков событий в основном файле проекта - main.ts.
 Обработчик событий 'catalog:updated' вызывается при обновлениях и изменениях в каталоге товаров, а затем передает каталог в галерею.
 
-Обработчик событий 'itemCard:select' вызывается при выборе карточки товара в каталоге на сайте.
-Обработчик событий 'preview:changed' вызывается при нажатии на кнопку 'Купить' в карточке выбранного товара, изменяя текст кнопки на 'Удалить из корзины'.
-Обработчик событий 'cart:updated' вызывается при изменениях в корзине с товарами, в том числе при добавлении и удалении товаров из корзины.
-Обработчик событий 'cart:open' вызывается при открытии корзины.
-Обработчик событий 'order:open' вызывается при открытии окна оформления заказа.
-Обработчик событий 'formErrors:change' вызывается при изменении статуса валидации введенных пользотелем данных в форму.
-Обработчик событий 'order:submit' вызывается при открытия второго окна формы с полями для ввода телефона и электронной почты.
-Обработчик событий 'contacts:submit' вызывается при отправки всех введенных пользователем данных для оформления заказа на сервер.
-Обработчик событий 'modal:open' вызывается при открытии модального окна.
-Обработчик событий 'modal:close' вызывается при закрытии модального окна.
+Обработчик событий `'catalog:updated'` вызывается при загрузке и обновлении списка товаров.
+Обработчик событий `'itemCard:select'` вызывается при выборе карточки товара в каталоге на сайте.
+Обработчик событий `'preview:changed'` вызывается при изменении крточки товара, настраивает текст для кнопки покупки товара.
+Обработчик событий `'preview:submit'` вызывается при нажатии на кнопку 'Купить' в карточке выбранного товара, добавляет и удаляет товар из корзины.
+Обработчик событий `'cart:updated'` вызывается при изменениях в корзине с товарами, в том числе при добавлении и удалении товаров из корзины.
+Обработчик событий `'cart:open'` вызывается при открытии корзины.
+Обработчик событий `'order:open'` вызывается при открытии окна оформления заказа.
+Обработчик событий `'order:submit'` вызывается при открытия второго окна формы с полями для ввода телефона и электронной почты.
+Обработчик событий `/^(order|contacts)\..*:change/` выражение отслеживающее изменения в инпут полях ввода.
+Обработчик событий `'buyer:changed'` вызывается при изменении в данных пользователя.
+Обработчик событий `'contacts:submit'` вызывается при отправки всех введенных пользователем данных для оформления заказа на сервер.
+Обработчик событий `'modal:open'` вызывается при открытии модального окна.
+Обработчик событий `'modal:close'` вызывается при закрытии модального окна.

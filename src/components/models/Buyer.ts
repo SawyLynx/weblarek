@@ -15,6 +15,7 @@ export class Buyer {
     } else {
       this[field] = value;
     }
+    this.events.emit("buyer:changed");
   }
 
   getAllData(): IBuyer {
@@ -31,7 +32,7 @@ export class Buyer {
     this.address = "";
     this.phone = "";
     this.email = "";
-    this.events.emit('data cleared', {});
+    this.events.emit("buyer:changed");
   }
 
   validateData(): FormError {
